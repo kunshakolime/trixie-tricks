@@ -5,19 +5,26 @@ Display and control your Android device (screen mirroring) over USB or Wi-Fi.
 ## Install
 
 ```bash
-wget -c -O /tmp/scrcpy_4.1_amd64.deb https://github.com/kunshakolime/trixie-tricks/releases/download/scrcpy-4.1/scrcpy_4.1_amd64.deb && sudo apt install /tmp/scrcpy_4.1_amd64.deb
+wget -c -O /tmp/scrcpy_5.0.1_amd64.deb https://github.com/kunshakolime/trixie-tricks/releases/download/scrcpy-5.0.1/scrcpy_5.0.1_amd64.deb && sudo apt install /tmp/scrcpy_5.0.1_amd64.deb
 ```
 
-Pulls Debian's `adb` package as a dependency. The adb bundled in the official
-static release is stripped.
+Depends on Debian's `adb`.
 
-After installing: plug in the phone with USB debugging on, authorize the
-computer, then run `scrcpy`.
+## Layout
+
+Data files sit next to the real binary because the release is built portable.
+
+```
+/usr/lib/scrcpy/scrcpy              # real binary
+/usr/lib/scrcpy/scrcpy-server
+/usr/lib/scrcpy/{scrcpy,disconnected}.png
+/usr/lib/scrcpy/adb -> /usr/bin/adb
+/usr/bin/scrcpy -> ../lib/scrcpy/scrcpy
+```
+
+Also installed: man page, bash/zsh completions, desktop entries, hicolor icons.
 
 ## Rebuild
-
-Packages the official static release with a standard FHS layout
-(`/usr/bin`, `/usr/share/man`, `/usr/share/doc`).
 
 ```bash
 ./build-scrcpy-deb.sh [OUTDIR]
@@ -28,9 +35,9 @@ Bump `VERSION` in `build-scrcpy-deb.sh` to track the latest tag from
 
 ## Alternative: official release tarball
 
-Installs the official static release into `/opt/scrcpy/` — no compiling, no
-scattered files, uses your system `adb`.
+Installs into `/opt/scrcpy/` instead, no deb. Same layout rule: data files must
+sit next to the binary.
 
 ```bash
-sudo bash -c 'command -v adb >/dev/null || apt install -y adb; mkdir -p /opt/scrcpy && curl -fsSL https://github.com/Genymobile/scrcpy/releases/download/v4.1/scrcpy-linux-x86_64-v4.1.tar.gz | tar -xz --strip-components=1 -C /opt/scrcpy scrcpy-linux-x86_64-v4.1/scrcpy scrcpy-linux-x86_64-v4.1/scrcpy-server && chmod +x /opt/scrcpy/scrcpy && curl -fsSLo /opt/scrcpy/scrcpy.png https://raw.githubusercontent.com/Genymobile/scrcpy/v4.1/app/data/scrcpy.png && curl -fsSLo /opt/scrcpy/disconnected.png https://raw.githubusercontent.com/Genymobile/scrcpy/v4.1/app/data/disconnected.png && ln -sf /usr/bin/adb /opt/scrcpy/adb && ln -sf /opt/scrcpy/scrcpy /usr/local/bin/scrcpy && scrcpy --version'
+sudo bash -c 'V=5.0.1; command -v adb >/dev/null || apt install -y adb; mkdir -p /opt/scrcpy && curl -fsSL https://github.com/Genymobile/scrcpy/releases/download/v${V}/scrcpy-linux-x86_64-v${V}.tar.gz | tar -xz --strip-components=1 -C /opt/scrcpy scrcpy-linux-x86_64-v${V}/scrcpy scrcpy-linux-x86_64-v${V}/scrcpy-server scrcpy-linux-x86_64-v${V}/scrcpy.png scrcpy-linux-x86_64-v${V}/disconnected.png && chmod +x /opt/scrcpy/scrcpy && ln -sf /usr/bin/adb /opt/scrcpy/adb && ln -sf /opt/scrcpy/scrcpy /usr/local/bin/scrcpy && scrcpy --version'
 ```
