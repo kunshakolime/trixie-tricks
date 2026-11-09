@@ -1,0 +1,9 @@
+# Oracle VirtualBox - opt-in.
+# Use explicitly with:  apt search virtualbox   (e.g. apt install virtualbox-7.1)
+Types: deb
+URIs: https://download.virtualbox.org/virtualbox/debian
+Suites: trixie
+Components: contrib
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/virtualbox-org.gpg
+Enabled: no

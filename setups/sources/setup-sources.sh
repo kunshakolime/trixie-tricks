@@ -17,7 +17,7 @@
 # trixie is only written when no enabled trixie source exists yet (stock Debian
 # 13 installs ship debian.sources, so it's skipped); otherwise it's installed
 # the modern way as a deb822 file. Everything else is written with
-# `Enabled: no`, then apt-sources (../apt-sources) runs interactively so you
+# `Enabled: no`, then apt-sources runs interactively so you
 # can enable the repos you want. Keyrings are fetched to /etc/apt/keyrings/
 # either way, ready to flip on.
 #
@@ -33,6 +33,7 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 SOURCE_D=/etc/apt/sources.list.d
 PREFS_D=/etc/apt/preferences.d
 KEYRINGS_D=/etc/apt/keyrings
@@ -97,7 +98,10 @@ trixie_configured() {
 }
 
 write_debian() {
-    cat > "$DEBIAN_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/debian.sources" ]; then
+        cp -a "$SCRIPT_DIR/debian.sources" "$DEBIAN_SRC"
+    else
+        cat > "$DEBIAN_SRC" <<EOF
 # Debian 13 "trixie" - base system (deb822).
 Types: deb
 URIs: https://deb.debian.org/debian/
@@ -111,10 +115,14 @@ Suites: trixie-security
 Components: main contrib non-free non-free-firmware
 Signed-By: $DEBIAN_KEYRING
 EOF
+    fi
 }
 
 write_forky() {
-    cat > "$FORKY_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/forky.sources" ]; then
+        sed "s/Architectures: .*/Architectures: $ARCH/" "$SCRIPT_DIR/forky.sources" > "$FORKY_SRC"
+    else
+        cat > "$FORKY_SRC" <<EOF
 # Debian 14 "forky" (testing) - opt-in, low priority.
 # Use explicitly with:  apt -t forky install <package>
 Types: deb
@@ -125,15 +133,20 @@ Architectures: $ARCH
 Signed-By: $DEBIAN_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 write_forky_pref() {
     mkdir -p "$PREFS_D"
-    cat > "$FORKY_PREF" <<'EOF'
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/forky.pref" ]; then
+        cp -a "$SCRIPT_DIR/forky.pref" "$FORKY_PREF"
+    else
+        cat > "$FORKY_PREF" <<'EOF'
 Package: *
 Pin: release n=forky
 Pin-Priority: 100
 EOF
+    fi
 }
 
 fetch_keyring() {
@@ -167,7 +180,10 @@ fetch_keyring_armored() {
 
 write_google() {
     fetch_keyring "$GOOGLE_KEYRING" "$GOOGLE_KEY_URL" "Google" || true
-    cat > "$GOOGLE_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/google-chrome.sources" ]; then
+        cp -a "$SCRIPT_DIR/google-chrome.sources" "$GOOGLE_SRC"
+    else
+        cat > "$GOOGLE_SRC" <<EOF
 # Google Chrome - opt-in.
 # Use explicitly with:  apt install google-chrome-stable
 Types: deb
@@ -178,11 +194,15 @@ Architectures: amd64
 Signed-By: $GOOGLE_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 write_wine() {
     fetch_keyring "$WINE_KEYRING" "$WINE_KEY_URL" "Wine" || true
-    cat > "$WINE_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/wine.sources" ]; then
+        cp -a "$SCRIPT_DIR/wine.sources" "$WINE_SRC"
+    else
+        cat > "$WINE_SRC" <<EOF
 # Wine (openSUSE OBS Emulators:/Wine:/Debian) - opt-in, latest upstream builds.
 # Install with:  apt install --install-recommends wine-devel
 # (wine-staging / wine-stable also available)
@@ -194,11 +214,15 @@ Architectures: amd64 i386
 Signed-By: $WINE_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 write_vscode() {
     fetch_keyring "$VSCODE_KEYRING" "$VSCODE_KEY_URL" "VSCode" || true
-    cat > "$VSCODE_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/vscode.sources" ]; then
+        cp -a "$SCRIPT_DIR/vscode.sources" "$VSCODE_SRC"
+    else
+        cat > "$VSCODE_SRC" <<EOF
 # Microsoft VSCode - opt-in.
 # Use explicitly with:  apt install code
 Types: deb
@@ -209,11 +233,15 @@ Architectures: amd64
 Signed-By: $VSCODE_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 write_firefox() {
     fetch_keyring_armored "$FIREFOX_KEYRING" "$FIREFOX_KEY_URL" "Firefox" || true
-    cat > "$FIREFOX_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/firefox.sources" ]; then
+        cp -a "$SCRIPT_DIR/firefox.sources" "$FIREFOX_SRC"
+    else
+        cat > "$FIREFOX_SRC" <<EOF
 # Mozilla Firefox - opt-in.
 # Use explicitly with:  apt install firefox
 Types: deb
@@ -224,11 +252,15 @@ Architectures: amd64
 Signed-By: $FIREFOX_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 write_virtualbox() {
     fetch_keyring "$VBOX_KEYRING" "$VBOX_KEY_URL" "VirtualBox" || true
-    cat > "$VBOX_SRC" <<EOF
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/virtualbox.sources" ]; then
+        cp -a "$SCRIPT_DIR/virtualbox.sources" "$VBOX_SRC"
+    else
+        cat > "$VBOX_SRC" <<EOF
 # Oracle VirtualBox - opt-in.
 # Use explicitly with:  apt search virtualbox   (e.g. apt install virtualbox-7.1)
 Types: deb
@@ -239,6 +271,7 @@ Architectures: amd64
 Signed-By: $VBOX_KEYRING
 Enabled: no
 EOF
+    fi
 }
 
 usage_hints() {
@@ -256,28 +289,16 @@ usage_hints() {
     echo
 }
 
-find_apt_sources() {
-    if command -v apt-sources >/dev/null 2>&1; then
-        command -v apt-sources
-    elif [ -x "$(dirname "$0")/../apt-sources/apt-sources.sh" ]; then
-        echo "$(dirname "$0")/../apt-sources/apt-sources.sh"
-    else
-        return 1
+install_apt_sources() {
+    if [ -n "$SCRIPT_DIR" ] && [ -f "$SCRIPT_DIR/apt-sources.sh" ]; then
+        install -m 755 "$SCRIPT_DIR/apt-sources.sh" /usr/local/bin/apt-sources
+    elif ! command -v apt-sources >/dev/null 2>&1 && command -v curl >/dev/null 2>&1; then
+        curl -fsSL https://raw.githubusercontent.com/kunshakolime/trixie-tricks/main/setups/sources/apt-sources.sh -o /usr/local/bin/apt-sources 2>/dev/null && chmod 755 /usr/local/bin/apt-sources || true
     fi
 }
 
 main() {
     ensure_root "$@"
-
-    local APT_SOURCES
-    APT_SOURCES=$(find_apt_sources) || {
-        echo "apt-sources not found - you can enable repos manually instead:" >&2
-        echo "  sudo nano /etc/apt/sources.list.d/*.sources   # flip 'Enabled: no' to 'Enabled: yes'" >&2
-        echo "  sudo apt-get update" >&2
-        echo "Or install and run apt-sources:" >&2
-        echo "  sudo install -m 755 $(dirname "$0")/../apt-sources/apt-sources.sh /usr/local/bin/apt-sources" >&2
-        exit 1
-    }
 
     backup
     if trixie_configured; then
@@ -300,8 +321,12 @@ main() {
     log "Wrote $FIREFOX_SRC"
     log "Wrote $VBOX_SRC"
 
-    log "apt-sources - pick which sources to enable, then done (cancelling keeps changes)"
-    "$APT_SOURCES" || true
+    install_apt_sources || true
+
+    if command -v apt-sources >/dev/null 2>&1; then
+        log "apt-sources - pick which sources to enable, then done (cancelling keeps changes)"
+        apt-sources || true
+    fi
 
     usage_hints
 

@@ -1,0 +1,10 @@
+# Wine (openSUSE OBS Emulators:/Wine:/Debian) - opt-in, latest upstream builds.
+# Install with:  apt install --install-recommends wine-devel
+# (wine-staging / wine-stable also available)
+Types: deb
+URIs: https://download.opensuse.org/repositories/Emulators:/Wine:/Debian/Debian_13/
+Suites: /
+Components:
+Architectures: amd64 i386
+Signed-By: /etc/apt/keyrings/wine-obs.gpg
+Enabled: no

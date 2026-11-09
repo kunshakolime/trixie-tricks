@@ -1,0 +1,9 @@
+# Debian 14 "forky" (testing) - opt-in, low priority.
+# Use explicitly with:  apt -t forky install <package>
+Types: deb
+URIs: https://deb.debian.org/debian/
+Suites: forky
+Components: main contrib non-free non-free-firmware
+Architectures: amd64
+Signed-By: /usr/share/keyrings/debian-archive-keyring.gpg
+Enabled: no

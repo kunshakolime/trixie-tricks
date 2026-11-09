@@ -1,0 +1,9 @@
+# Microsoft VSCode - opt-in.
+# Use explicitly with:  apt install code
+Types: deb
+URIs: https://packages.microsoft.com/repos/code
+Suites: stable
+Components: main
+Architectures: amd64
+Signed-By: /etc/apt/keyrings/microsoft.gpg
+Enabled: no
